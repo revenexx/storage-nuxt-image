@@ -2,135 +2,97 @@
 
 Every transformation the revenexx Storage CDN supports is reachable through
 `:modifiers` on `<NuxtImg>` / `<NuxtPicture>`, or as the second argument to
-`buildImageUrl`.
+`buildImageUrl`. Each modifier becomes a **query parameter** on the `/cdn/` URL;
+the CDN validates, clamps and signs the transform server-side.
 
-Keys are **camelCase**; they're serialized to the CDN's short option names.
-
-> Anything not listed here can still be sent verbatim via
-> `rawOptions: ['option:arg1:arg2', …]`.
+> Anything not listed here can be sent verbatim via `rawOptions` (→ the CDN's
+> `opts` parameter), e.g. `rawOptions: ['gr:0.5:1:0']`.
 
 ## Standard Nuxt modifiers
 
-| Modifier     | CDN option    | Example                                  |
-| ------------ | ------------- | ---------------------------------------- |
-| `width`      | `w`           | `{ width: 800 }`                         |
-| `height`     | `h`           | `{ height: 600 }`                        |
-| `fit`        | `rt`          | `{ fit: 'cover' }` → `rt:fill`           |
-| `format`     | extension     | `{ format: 'webp' }` → `…@webp`          |
-| `quality`    | `q`           | `{ quality: 80 }`                        |
-| `background` | `bg`          | `{ background: 'fff' }` / `[255,0,0]`    |
+| Modifier     | Query param  | Example                                  |
+| ------------ | ------------ | ---------------------------------------- |
+| `width`      | `w`          | `{ width: 800 }` → `w=800`               |
+| `height`     | `h`          | `{ height: 600 }` → `h=600`              |
+| `fit`        | `fit`        | `{ fit: 'cover' }` → `fit=cover`         |
+| `format`     | `fm`         | `{ format: 'webp' }` → `fm=webp`         |
+| `quality`    | `q`          | `{ quality: 80 }` → `q=80`               |
+| `background` | `background` | `{ background: [255,0,0] }` → `background=255:0:0` |
 
-`fit` mapping: `cover→fill`, `contain→fit`, `fill→force`, `inside→fit`,
-`outside→fill`. Native values (`force`, `auto`, `fill-down`) pass through.
+`fit` values: `cover` / `fill` / `crop` fill the box (cropping); `contain` /
+`inside` / `outside` fit within it.
 
 ## Resize & dimensions
 
-| Modifier            | CDN option | Notes |
-| ------------------- | ---------- | ----- |
-| `resize`            | `rs`       | `{ type, width, height, enlarge, extend }` |
-| `resizingType`      | `rt`       | `fit \| fill \| fill-down \| force \| auto` |
-| `resizingAlgorithm` | `ra`       | `nearest \| linear \| cubic \| lanczos2 \| lanczos3` |
-| `size`              | `s`        | `{ width, height, enlarge, extend }` |
-| `minWidth`          | `mw`       | |
-| `minHeight`         | `mh`       | |
-| `zoom`              | `z`        | `number` or `[x, y]` |
-| `dpr`               | `dpr`      | device pixel ratio |
-| `enlarge`           | `el`       | boolean |
-| `extend`            | `ex`       | `true` or `{ gravity }` |
-| `extendAspectRatio` | `exar`     | `true` or `{ gravity }` |
+| Modifier            | Query param         | Notes |
+| ------------------- | ------------------- | ----- |
+| `resize`            | `w` / `h` / `fit`   | `{ type, width, height, enlarge }` — decomposed |
+| `size`              | `w` / `h`           | `{ width, height, enlarge }` |
+| `resizingAlgorithm` | `resizingAlgorithm` | `nearest \| linear \| cubic \| lanczos2 \| lanczos3` |
+| `minWidth`          | `minWidth`          | |
+| `minHeight`         | `minHeight`         | |
+| `zoom`              | `zoom`              | `number` or `[x, y]` |
+| `dpr`               | `dpr`               | device pixel ratio |
+| `enlarge`           | `enlarge`           | boolean → `enlarge=1` |
+| `extend`            | `extend`            | `true` or `{ gravity }` |
+| `extendAspectRatio` | `extendAspectRatio` | `true` or `{ gravity }` |
 
 ## Geometry
 
-| Modifier     | CDN option | Notes |
-| ------------ | ---------- | ----- |
-| `gravity`    | `g`        | `'sm'`, `'ce'`, `'no'`…, or `{ type, x, y }` (e.g. `fp` focus point) |
-| `crop`       | `c`        | `{ width, height, gravity }` |
-| `trim`       | `t`        | `{ threshold, color, equalHor, equalVer }` |
-| `padding`    | `pd`       | `number` or `{ top, right, bottom, left }` |
-| `autoRotate` | `ar`       | boolean |
-| `rotate`     | `rot`      | `0 \| 90 \| 180 \| 270` |
+| Modifier     | Query param  | Notes |
+| ------------ | ------------ | ----- |
+| `gravity`    | `gravity`    | `'sm'`, `'ce'`, `'no'`…, or `{ type, x, y }` (e.g. `fp` focus point) → `gravity=fp:0.5:0.3` |
+| `crop`       | `crop`       | `{ width, height, gravity }` → `crop=100:50:sm` |
+| `trim`       | `trim`       | `{ threshold, color, equalHor, equalVer }` |
+| `padding`    | `padding`    | `number` or `{ top, right, bottom, left }` |
+| `autoRotate` | `autoRotate` | boolean |
+| `rotate`     | `rotate`     | `0 \| 90 \| 180 \| 270` |
 
-## Color & effects
+## Colour & effects
 
-| Modifier          | CDN option | Notes |
-| ----------------- | ---------- | ----- |
-| `background`      | `bg`       | `'rrggbb'` or `[r, g, b]` |
-| `backgroundAlpha` | `bga`      | `0`–`1` |
-| `adjust`          | `a`        | `{ brightness, contrast, saturation }` |
-| `brightness`      | `br`       | |
-| `contrast`        | `co`       | |
-| `saturation`      | `sa`       | |
-| `blur`            | `bl`       | sigma |
-| `sharpen`         | `sh`       | sigma |
-| `pixelate`        | `pix`      | block size |
-| `unsharpening`    | `ush`      | `[mode, weight, divider]` |
-| `monochrome`      | `mc`       | |
-| `duotone`         | `dt`       | |
+| Modifier          | Query param       | Notes |
+| ----------------- | ----------------- | ----- |
+| `background`      | `background`      | `'rrggbb'` or `[r, g, b]` |
+| `backgroundAlpha` | `backgroundAlpha` | `0`–`1` |
+| `adjust`          | `adjust`          | `{ brightness, contrast, saturation }` → `adjust=10:0.9:1.1` |
+| `brightness`      | `brightness`      | |
+| `contrast`        | `contrast`        | |
+| `saturation`      | `saturation`      | |
+| `blur`            | `blur`            | sigma |
+| `sharpen`         | `sharpen`         | sigma |
+| `pixelate`        | `pixelate`        | block size |
+| `unsharpening`    | `unsharpening`    | `[mode, weight, divider]` |
+| `monochrome`      | `monochrome`      | boolean or value |
 
 ## Watermark
 
-| Modifier          | CDN option | Notes |
-| ----------------- | ---------- | ----- |
-| `watermark`       | `wm`       | `{ opacity, position, x, y, scale }` |
-| `watermarkUrl`    | `wmu`      | base64 URL of the watermark image |
-| `watermarkText`   | `wmt`      | |
-| `watermarkSize`   | `wms`      | `[w, h]` |
-| `watermarkRotate` | `wmr`      | degrees |
-| `watermarkShadow` | `wmsh`     | |
+| Modifier    | Query param | Notes |
+| ----------- | ----------- | ----- |
+| `watermark` | `watermark` | `{ opacity, position, x, y, scale }` → `watermark=0.4:soea:16:16:0.15` |
 
-## Layout & metadata
+## Layout, metadata & output
 
-| Modifier            | CDN option | Notes |
-| ------------------- | ---------- | ----- |
-| `style`             | `st`       | CSS-like style string |
-| `stripMetadata`     | `sm`       | boolean |
-| `keepCopyright`     | `kcr`      | boolean |
-| `stripColorProfile` | `scp`      | boolean |
-| `enforceThumbnail`  | `eth`      | boolean |
-| `dpi`               | `dpi`      | |
+| Modifier            | Query param         | Notes |
+| ------------------- | ------------------- | ----- |
+| `style`             | `style`             | CSS-like style string |
+| `stripMetadata`     | `stripMetadata`     | boolean |
+| `keepCopyright`     | `keepCopyright`     | boolean |
+| `stripColorProfile` | `stripColorProfile` | boolean |
+| `enforceThumbnail`  | `enforceThumbnail`  | boolean |
+| `dpi`               | `dpi`               | |
+| `formatQuality`     | `formatQuality`     | `{ webp: 80, avif: 60 }` → `formatQuality=webp:80:avif:60` |
+| `autoquality`       | `autoquality`       | `method:target:min:max` |
+| `maxBytes`          | `maxBytes`          | cap output size |
+| `page`              | `page`              | multi-page documents |
+| `disableAnimation`  | `disableAnimation`  | boolean |
 
-## Output
+## Presets & escape hatch
 
-| Modifier               | CDN option | Notes |
-| ---------------------- | ---------- | ----- |
-| `quality`              | `q`        | `0`–`100` |
-| `formatQuality`        | `fq`       | `{ webp: 80, avif: 60 }` or a raw string |
-| `autoquality`          | `aq`       | `method:target:min:max` |
-| `maxBytes`             | `mb`       | cap output size |
-| `jpegOptions`          | `jpgo`     | array or raw string |
-| `pngOptions`           | `pngo`     | array or raw string |
-| `gifOptions`           | `gifo`     | array or raw string |
-| `format`               | extension  | preferred over `f:` |
-| `page`                 | `pg`       | multi-page documents |
-| `pages`                | `pgs`      | |
-| `disableAnimation`     | `da`       | boolean |
-| `videoThumbnailSecond` | `vts`      | |
-| `fallbackImageUrl`     | `fiu`      | base64 URL |
-
-## Flow & serving
-
-| Modifier             | CDN option | Notes |
-| -------------------- | ---------- | ----- |
-| `skipProcessing`     | `skp`      | list of extensions to skip |
-| `raw`                | `raw`      | serve raw bytes |
-| `cachebuster`        | `cb`       | |
-| `expires`            | `exp`      | unix timestamp |
-| `filename`           | `fn`       | download filename |
-| `returnAttachment`   | `att`      | boolean |
-| `preset`             | `pr`       | `string` or `string[]` (applied first) |
-| `maxSrcResolution`   | `msr`      | megapixels |
-| `maxSrcFileSize`     | `msfs`     | bytes |
-| `maxAnimationFrames` | `maf`      | |
-
-## Escape hatch
+| Modifier     | Query param | Notes |
+| ------------ | ----------- | ----- |
+| `preset`     | `preset`    | `string` or `string[]` (applied first) |
+| `rawOptions` | `opts`      | raw, comma-separated transform segments for the long tail |
 
 ```ts
-{
-  rawOptions: [
-    'gradient:0.5:1:0',
-    'watermark_text:Hello',
-  ],
-}
+{ rawOptions: ['gr:0.5:1:0', 'co:0.8'] } // → ?opts=gr:0.5:1:0,co:0.8
 ```
-
-`rawOptions` segments are appended verbatim after all mapped options.

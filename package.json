@@ -53,7 +53,6 @@
     "release": "pnpm test && pnpm build && changelogen --release --push && npm publish --access public"
   },
   "dependencies": {
-    "@noble/hashes": "^1.6.1",
     "ufo": "^1.5.4"
   },
   "peerDependencies": {

@@ -2,147 +2,86 @@ import { describe, expect, it } from 'vitest'
 import { buildImageUrl, serializeModifiers } from '../src/builder'
 
 describe('buildImageUrl', () => {
-  it('builds a root-relative URL with /cdn/ auto-appended and the insecure signature', () => {
-    expect(buildImageUrl('uploads/a.jpg', { width: 300, height: 400 }))
-      .toBe('/cdn/insecure/w:300/h:400/plain/uploads/a.jpg')
+  it('builds a root-relative /cdn/ URL with a query string', () => {
+    expect(buildImageUrl('sftp-imports/header.jpg', { width: 200 }))
+      .toBe('/cdn/sftp-imports/header.jpg?w=200')
+  })
+
+  it('emits no query when there are no modifiers', () => {
+    expect(buildImageUrl('sftp-imports/header.jpg')).toBe('/cdn/sftp-imports/header.jpg')
   })
 
   it('prepends the customer base URL (bring your own domain)', () => {
-    expect(buildImageUrl('uploads/a.jpg', { width: 300 }, { baseURL: 'https://my-shop.com' }))
-      .toBe('https://my-shop.com/cdn/insecure/w:300/plain/uploads/a.jpg')
+    expect(buildImageUrl('uploads/a.jpg', { width: 300, height: 200, fit: 'cover', format: 'webp' }, { baseURL: 'https://my-shop.com' }))
+      .toBe('https://my-shop.com/cdn/uploads/a.jpg?w=300&h=200&fit=cover&fm=webp')
   })
 
   it('honours a custom cdnPath and can disable it', () => {
-    expect(buildImageUrl('a.jpg', { width: 10 }, { cdnPath: '/img/' }))
-      .toBe('/img/insecure/w:10/plain/a.jpg')
-    expect(buildImageUrl('a.jpg', { width: 10 }, { cdnPath: '', baseURL: 'https://my-shop.com' }))
-      .toBe('https://my-shop.com/insecure/w:10/plain/a.jpg')
+    expect(buildImageUrl('a.jpg', { width: 10 }, { cdnPath: '/img/' })).toBe('/img/a.jpg?w=10')
+    expect(buildImageUrl('a.jpg', { width: 10 }, { cdnPath: '', baseURL: 'https://x.test' }))
+      .toBe('https://x.test/a.jpg?w=10')
   })
 
-  it('maps the Nuxt `fit` modifier to a resizing type', () => {
-    expect(buildImageUrl('a.jpg', { fit: 'cover' })).toContain('/rt:fill/')
-    expect(buildImageUrl('a.jpg', { fit: 'contain' })).toContain('/rt:fit/')
-    expect(buildImageUrl('a.jpg', { fit: 'fill' })).toContain('/rt:force/')
-    expect(buildImageUrl('a.jpg', { fit: 'fill-down' })).toContain('/rt:fill-down/')
-  })
-
-  it('encodes the format as a plain @extension', () => {
-    expect(buildImageUrl('a.jpg', { width: 100, format: 'webp' }))
-      .toBe('/cdn/insecure/w:100/plain/a.jpg@webp')
-  })
-
-  it('base64-encodes the source (with .extension) when requested', () => {
-    // base64url("https://x.test/a.jpg") = aHR0cHM6Ly94LnР…  (computed at runtime)
-    const url = buildImageUrl('https://x.test/a.jpg', { width: 100, format: 'avif' }, { encode: 'base64' })
-    expect(url).toMatch(/^\/cdn\/insecure\/w:100\/[\w-]+\.avif$/)
-    expect(url).not.toContain('plain/')
-  })
-
-  it('supports quality, dpr, blur, sharpen and background', () => {
-    const url = buildImageUrl('a.jpg', {
-      width: 200,
-      quality: 80,
-      dpr: 2,
-      blur: 5,
-      sharpen: 0.5,
-      background: 'fff',
-    })
-    expect(url).toContain('w:200')
-    expect(url).toContain('q:80')
-    expect(url).toContain('dpr:2')
-    expect(url).toContain('bl:5')
-    expect(url).toContain('sh:0.5')
-    expect(url).toContain('bg:fff')
-  })
-
-  it('accepts an RGB-triplet background color', () => {
-    expect(buildImageUrl('a.jpg', { background: [255, 0, 128] })).toContain('bg:255:0:128')
-  })
-
-  it('strips a leading slash from relative sources (no double slash)', () => {
-    expect(buildImageUrl('/uploads/a.jpg', { width: 100 }))
-      .toBe('/cdn/insecure/w:100/plain/uploads/a.jpg')
-  })
-
-  it('keeps absolute source URLs intact', () => {
+  it('strips a leading slash from relative sources but keeps absolute URLs', () => {
+    expect(buildImageUrl('/uploads/a.jpg', { width: 100 })).toBe('/cdn/uploads/a.jpg?w=100')
     expect(buildImageUrl('https://cdn.example.com/a.jpg', { width: 100 }))
-      .toBe('/cdn/insecure/w:100/plain/https://cdn.example.com/a.jpg')
+      .toBe('/cdn/https://cdn.example.com/a.jpg?w=100')
+  })
+
+  it('maps the standard modifiers to their CDN params', () => {
+    expect(buildImageUrl('a.jpg', { width: 200, height: 150, fit: 'contain', quality: 70, format: 'avif', background: 'fff' }))
+      .toBe('/cdn/a.jpg?w=200&h=150&fit=contain&q=70&fm=avif&background=fff')
   })
 })
 
-describe('serializeModifiers — structured & advanced options', () => {
-  const seg = (m: Parameters<typeof serializeModifiers>[0]) => serializeModifiers(m).segments
+describe('serializeModifiers', () => {
+  it('serializes scalar effects', () => {
+    const q = serializeModifiers({ dpr: 2, blur: 5, sharpen: 0.5, rotate: 90, brightness: 10 })
+    expect(q).toContain('dpr=2')
+    expect(q).toContain('blur=5')
+    expect(q).toContain('sharpen=0.5')
+    expect(q).toContain('rotate=90')
+    expect(q).toContain('brightness=10')
+  })
 
-  it('serializes a structured resize', () => {
-    expect(seg({ resize: { type: 'fill', width: 300, height: 400, enlarge: true } }))
-      .toContain('rs:fill:300:400:1')
+  it('serializes gravity (string and focus-point object) with readable colons', () => {
+    expect(serializeModifiers({ gravity: 'sm' })).toBe('gravity=sm')
+    expect(serializeModifiers({ gravity: { type: 'fp', x: 0.5, y: 0.3 } })).toBe('gravity=fp:0.5:0.3')
   })
 
   it('serializes crop with gravity', () => {
-    expect(seg({ crop: { width: 100, height: 50, gravity: 'sm' } })).toContain('c:100:50:sm')
-    expect(seg({ crop: { width: 100, height: 50, gravity: { type: 'fp', x: 0.5, y: 0.3 } } }))
-      .toContain('c:100:50:fp:0.5:0.3')
+    expect(serializeModifiers({ crop: { width: 100, height: 50, gravity: 'sm' } })).toBe('crop=100:50:sm')
   })
 
-  it('serializes a focus-point gravity object', () => {
-    expect(seg({ gravity: { type: 'fp', x: 0.1, y: 0.9 } })).toContain('g:fp:0.1:0.9')
+  it('serializes adjust, trim, watermark, padding', () => {
+    expect(serializeModifiers({ adjust: { brightness: 10, contrast: 0.9, saturation: 1.1 } })).toBe('adjust=10:0.9:1.1')
+    expect(serializeModifiers({ trim: { threshold: 10, color: 'ffffff', equalHor: true, equalVer: false } })).toBe('trim=10:ffffff:1:0')
+    expect(serializeModifiers({ watermark: { opacity: 0.5, position: 'soea', x: 10, y: 10, scale: 0.2 } })).toBe('watermark=0.5:soea:10:10:0.2')
+    expect(serializeModifiers({ padding: 20 })).toBe('padding=20')
+    expect(serializeModifiers({ padding: { top: 1, right: 2, bottom: 3, left: 4 } })).toBe('padding=1:2:3:4')
   })
 
-  it('serializes adjust', () => {
-    expect(seg({ adjust: { brightness: 10, contrast: 0.8, saturation: 1.2 } }))
-      .toContain('a:10:0.8:1.2')
+  it('serializes an RGB-triplet background and a per-format quality object', () => {
+    expect(serializeModifiers({ background: [255, 0, 128] })).toBe('background=255:0:128')
+    expect(serializeModifiers({ formatQuality: { webp: 80, avif: 60 } })).toBe('formatQuality=webp:80:avif:60')
   })
 
-  it('serializes a watermark', () => {
-    expect(seg({ watermark: { opacity: 0.5, position: 'soea', x: 10, y: 10, scale: 0.2 } }))
-      .toContain('wm:0.5:soea:10:10:0.2')
+  it('decomposes a resize object onto w/h/fit', () => {
+    expect(serializeModifiers({ resize: { type: 'fill', width: 300, height: 400, enlarge: true } }))
+      .toBe('w=300&h=400&fit=fill&enlarge=1')
   })
 
-  it('serializes trim', () => {
-    expect(seg({ trim: { threshold: 10, color: 'ffffff', equalHor: true, equalVer: false } }))
-      .toContain('t:10:ffffff:1:0')
+  it('serializes boolean flags as =1 and omits falsy ones', () => {
+    expect(serializeModifiers({ stripMetadata: true, enforceThumbnail: true })).toBe('stripMetadata=1&enforceThumbnail=1')
+    expect(serializeModifiers({ stripMetadata: false })).toBe('')
   })
 
-  it('serializes padding from a number or an object', () => {
-    expect(seg({ padding: 20 })).toContain('pd:20')
-    expect(seg({ padding: { top: 1, right: 2, bottom: 3, left: 4 } })).toContain('pd:1:2:3:4')
+  it('serializes presets and the rawOptions escape hatch (→ opts)', () => {
+    expect(serializeModifiers({ preset: ['sharp', 'mine'] })).toBe('preset=sharp:mine')
+    expect(serializeModifiers({ width: 10, rawOptions: ['gr:0.5:1:0', 'co:0.8'] })).toBe('w=10&opts=gr:0.5:1:0,co:0.8')
   })
 
-  it('serializes presets first', () => {
-    expect(seg({ preset: ['sharp', 'mypreset'], width: 100 })[0]).toBe('pr:sharp:mypreset')
-  })
-
-  it('serializes boolean flow flags as :1', () => {
-    expect(seg({ stripMetadata: true, enforceThumbnail: true })).toEqual(
-      expect.arrayContaining(['sm:1', 'eth:1']),
-    )
-    // false flags are omitted
-    expect(seg({ stripMetadata: false })).not.toContain('sm:1')
-  })
-
-  it('passes through the full long-tail via key map', () => {
-    const s = seg({
-      maxBytes: 100000,
-      page: 2,
-      expires: 1700000000,
-      cachebuster: 'v2',
-      filename: 'photo.jpg',
-      style: 'border-radius:50%25',
-    })
-    expect(s).toEqual(expect.arrayContaining([
-      'mb:100000', 'pg:2', 'exp:1700000000', 'cb:v2', 'fn:photo.jpg', 'st:border-radius:50%25',
-    ]))
-  })
-
-  it('appends rawOptions verbatim for anything unmodelled', () => {
-    expect(seg({ width: 10, rawOptions: ['gr:0.5:1', 'fancy:opt'] })).toEqual(
-      expect.arrayContaining(['w:10', 'gr:0.5:1', 'fancy:opt']),
-    )
-  })
-
-  it('returns the format separately (encoded as extension, not an option)', () => {
-    const { segments, format } = serializeModifiers({ width: 10, format: 'webp' })
-    expect(format).toBe('webp')
-    expect(segments).not.toContain('f:webp')
+  it('returns an empty string with no modifiers', () => {
+    expect(serializeModifiers({})).toBe('')
   })
 })

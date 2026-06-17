@@ -1,16 +1,14 @@
 /**
  * `@revenexx/storage-nuxt-image/builder`
  *
- * Framework-agnostic image-transformation URL builder for the revenexx Storage CDN. Use it
- * directly anywhere (server scripts, Vue/React, tests) — the Nuxt Image
- * provider is a thin wrapper around {@link buildImageUrl}.
+ * Framework-agnostic image-transformation URL builder for the revenexx Storage
+ * CDN. Use it directly anywhere (server scripts, Vue/React, tests) — the Nuxt
+ * Image provider is a thin wrapper around {@link buildImageUrl}.
  */
 import { joinURL } from 'ufo'
-import { serializeModifiers } from './options'
-import { signPath } from './sign'
-import type { TransformModifiers, ProviderOptions } from './types'
+import { serializeModifiers } from './serialize'
+import type { ProviderOptions, TransformModifiers } from './types'
 
-export type { TransformModifiers, ProviderOptions, SourceEncoding } from './types'
 export type {
   Adjust,
   Color,
@@ -18,27 +16,16 @@ export type {
   Gravity,
   GravityType,
   Padding,
+  ProviderOptions,
   Resize,
   ResizingType,
+  TransformModifiers,
   Trim,
   Watermark,
 } from './types'
-export { KEY_MAP, serializeModifiers } from './options'
-export { signPath } from './sign'
+export { serializeModifiers } from './serialize'
 
 const DEFAULT_CDN_PATH = '/cdn/'
-
-function base64Url(input: string): string {
-  const bytes = new TextEncoder().encode(input)
-  let binary = ''
-  for (const b of bytes) {
-    binary += String.fromCharCode(b)
-  }
-  const base64 = typeof btoa === 'function'
-    ? btoa(binary)
-    : Buffer.from(bytes).toString('base64')
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
 
 /** True for absolute (`https://…`) or protocol-relative (`//…`) sources. */
 function isAbsolute(src: string): boolean {
@@ -47,72 +34,32 @@ function isAbsolute(src: string): boolean {
 
 /**
  * Normalize a relative source so it joins cleanly: a single leading slash is
- * dropped (`/uploads/a.jpg` → `uploads/a.jpg`) so it resolves against the
- * edge's base URL without a double slash. Absolute URLs are untouched.
+ * dropped (`/uploads/a.jpg` → `uploads/a.jpg`). Absolute URLs are untouched.
  */
 function normalizeSource(src: string): string {
-  if (isAbsolute(src)) {
-    return src
-  }
-  return src.replace(/^\/+/, '')
-}
-
-/** Encode the source into the source part of the path. */
-function encodeSource(src: string, encode: 'plain' | 'base64', format?: string): string {
-  if (encode === 'base64') {
-    const b64 = base64Url(src)
-    return format ? `${b64}.${format}` : b64
-  }
-  // plain: keep slashes readable, escape the rest; the CDN percent-decodes it.
-  const escaped = encodeURI(src).replace(/\?/g, '%3F').replace(/#/g, '%23')
-  return format ? `plain/${escaped}@${format}` : `plain/${escaped}`
+  return isAbsolute(src) ? src : src.replace(/^\/+/, '')
 }
 
 /**
- * Build a transformation URL for `src` with the given `modifiers`.
+ * Build a CDN URL for `src` with the given `modifiers`.
  *
- * The result is `<baseURL><cdnPath><signature>/<processing-options>/<source>`,
- * e.g. `https://my-shop.com/cdn/insecure/rs:fill:300:400/g:sm/plain/uploads/a.jpg`.
+ * The result is `<baseURL><cdnPath><source>?<query>`, e.g.
+ * `https://my-shop.com/cdn/uploads/a.jpg?w=300&fit=cover&fm=webp`. The CDN
+ * translates the query into the actual transform, clamps abusive values and
+ * signs the request server-side — clients never sign or craft raw transforms.
  *
- * @param src        The image source — a relative path (resolved by the edge's
- *                   the CDN's base URL) or an absolute URL.
- * @param modifiers  Standard Nuxt modifiers and/or transformation options.
- * @param options    {@link ProviderOptions} (baseURL, cdnPath, encoding, signing).
+ * @param src        The image source — a path under the CDN (resolved by the
+ *                   edge), or an absolute URL.
+ * @param modifiers  Standard Nuxt modifiers and/or the richer transform set.
+ * @param options    {@link ProviderOptions} (baseURL, cdnPath).
  */
 export function buildImageUrl(
   src: string,
   modifiers: TransformModifiers = {},
   options: ProviderOptions = {},
 ): string {
-  const {
-    baseURL = '',
-    cdnPath = DEFAULT_CDN_PATH,
-    encode = 'plain',
-    key,
-    salt,
-    signature,
-    signatureSize,
-  } = options
-
-  const { segments, format } = serializeModifiers(modifiers)
-  const processing = segments.join('/')
-  const source = encodeSource(normalizeSource(src), encode, format)
-
-  // The path the CDN signs / serves, after the signature segment.
-  const signedPath = '/' + [processing, source].filter(Boolean).join('/')
-
-  let sig: string | undefined
-  if (key && salt) {
-    sig = signPath(signedPath, key, salt, signatureSize)
-  }
-  else if (signature === false) {
-    sig = undefined
-  }
-  else {
-    sig = signature ?? 'insecure'
-  }
-
-  // joinURL drops empty parts, so a missing signature or empty processing list
-  // collapses cleanly.
-  return joinURL(baseURL, cdnPath, sig ?? '', processing, source)
+  const { baseURL = '', cdnPath = DEFAULT_CDN_PATH } = options
+  const query = serializeModifiers(modifiers)
+  const path = joinURL(baseURL, cdnPath, normalizeSource(src))
+  return query ? `${path}?${query}` : path
 }

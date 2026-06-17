@@ -2,8 +2,9 @@
  * Public types for `@revenexx/storage-nuxt-image`.
  *
  * The package builds image-transformation URLs for the revenexx Storage CDN.
- * Two surfaces share these types: the pure URL {@link buildImageUrl} builder
- * and the Nuxt Image provider.
+ * Transforms are expressed as **query parameters** on a `/cdn/` URL (the CDN
+ * translates, clamps and signs them server-side); two surfaces share these
+ * types: the pure {@link buildImageUrl} builder and the Nuxt Image provider.
  */
 
 /** A `R:G:B` triplet (0-255) or a hex string (`fff`, `ffffff`). */
@@ -40,7 +41,6 @@ export interface Resize {
   width?: number
   height?: number
   enlarge?: boolean
-  extend?: boolean
 }
 
 export interface Crop {
@@ -75,13 +75,11 @@ export interface Watermark {
 export type Padding = number | { top?: number, right?: number, bottom?: number, left?: number }
 
 /**
- * The full transformation surface, plus the standard Nuxt Image modifiers
- * (`width`, `height`, `fit`, `format`, `quality`, `background`). Anything not
- * listed can still be passed through {@link TransformModifiers.rawOptions}.
- *
- * Camel-case keys map to the CDN's short option names; structured options
- * accept ergonomic objects (e.g. `resize`, `crop`, `gravity`, `adjust`,
- * `watermark`).
+ * The transformation surface, mapped to the revenexx Storage CDN's query
+ * parameters. Standard Nuxt Image modifiers (`width`, `height`, `fit`,
+ * `format`, `quality`, `background`) are first-class; the richer options below
+ * cover gravity, cropping, colour, effects and watermarking. Anything beyond
+ * this set can be passed through {@link TransformModifiers.rawOptions}.
  */
 export interface TransformModifiers {
   // --- Nuxt Image standard modifiers ---------------------------------------
@@ -91,19 +89,18 @@ export interface TransformModifiers {
   height?: number | string
   /** How the image fits the box. */
   fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside' | ResizingType
-  /** Output format (`webp`, `avif`, `jpg`, `png`, …). Sets the URL extension. */
+  /** Output format (`webp`, `avif`, `jpg`, `png`, `gif`). */
   format?: string
   /** Quality 0..100. */
   quality?: number | string
-  /** Background color for transparent areas. */
+  /** Background colour for transparent areas. */
   background?: Color
 
   // --- Resize --------------------------------------------------------------
+  /** Structured resize; decomposed to width/height/fit/enlarge. */
   resize?: Resize
-  resizingType?: ResizingType
-  /** Resizing algorithm (`nearest`, `linear`, `cubic`, `lanczos2`, `lanczos3`). */
+  size?: { width?: number, height?: number, enlarge?: boolean }
   resizingAlgorithm?: string
-  size?: { width?: number, height?: number, enlarge?: boolean, extend?: boolean }
   minWidth?: number
   minHeight?: number
   zoom?: number | [number, number]
@@ -115,13 +112,12 @@ export interface TransformModifiers {
   // --- Geometry ------------------------------------------------------------
   gravity?: GravityType | Gravity
   crop?: Crop
-  /** Trim borders. */
   trim?: Trim
   padding?: Padding
   autoRotate?: boolean
   rotate?: 0 | 90 | 180 | 270
 
-  // --- Color & effects -----------------------------------------------------
+  // --- Colour & effects ----------------------------------------------------
   backgroundAlpha?: number
   adjust?: Adjust
   brightness?: number
@@ -133,15 +129,9 @@ export interface TransformModifiers {
   /** `mode:weight:divider`. */
   unsharpening?: [string, number, number] | string
   monochrome?: boolean | number
-  duotone?: boolean | number
 
   // --- Watermark -----------------------------------------------------------
   watermark?: Watermark
-  watermarkUrl?: string
-  watermarkText?: string
-  watermarkSize?: [number, number] | string
-  watermarkRotate?: number
-  watermarkShadow?: number
 
   // --- Layout / metadata ---------------------------------------------------
   /** Apply a CSS-like style string. */
@@ -159,34 +149,16 @@ export interface TransformModifiers {
   autoquality?: string | (string | number)[]
   /** Cap the output size in bytes. */
   maxBytes?: number
-  jpegOptions?: (string | number | boolean)[] | string
-  pngOptions?: (string | number | boolean)[] | string
-  gifOptions?: (string | number | boolean)[] | string
   /** Select a page of a multi-page document. */
   page?: number
-  pages?: number
   disableAnimation?: boolean
-  videoThumbnailSecond?: number
-  fallbackImageUrl?: string
 
-  // --- Flow / serving ------------------------------------------------------
-  skipProcessing?: string[] | string
-  /** Treat the source as raw bytes (no processing). */
-  raw?: string[] | string | boolean
-  cachebuster?: string
-  /** Unix timestamp after which the URL is rejected. */
-  expires?: number
-  filename?: string
-  returnAttachment?: boolean
+  // --- Presets & escape hatch ----------------------------------------------
   /** Apply a named preset (or several). */
   preset?: string | string[]
-  maxSrcResolution?: number
-  maxSrcFileSize?: number
-  maxAnimationFrames?: number
-
   /**
-   * Escape hatch: literal option segments appended verbatim, e.g.
-   * `['rs:fill:300:400', 'g:sm']`. Use for any option not modelled above.
+   * Escape hatch: raw transform segments appended verbatim (e.g.
+   * `['gr:0.5:1:0']`). Use for any option not modelled above.
    */
   rawOptions?: string[]
 
@@ -194,47 +166,18 @@ export interface TransformModifiers {
   [key: string]: unknown
 }
 
-/** How the source image is encoded into the URL. */
-export type SourceEncoding = 'plain' | 'base64'
-
 /** Options for {@link buildImageUrl} and the Nuxt provider. */
 export interface ProviderOptions {
   /**
    * Base URL the CDN is served from — typically the customer's own domain,
-   * e.g. `https://my-shop.com`. Empty (default) produces a root-relative URL.
-   * This is the "bring your own domain" knob.
+   * e.g. `https://my-shop.com`. Empty (default) produces a root-relative URL,
+   * which the browser resolves against the current origin (bring your own
+   * domain — one build works on every customer domain).
    */
   baseURL?: string
   /**
-   * Path segment appended after {@link baseURL} that routes to the revenexx
-   * edge. Defaults to `/cdn/`. Set to `''` to disable.
+   * Path segment between {@link baseURL} and the source that routes to the
+   * revenexx edge. Defaults to `/cdn/`. Set to `''` to disable.
    */
   cdnPath?: string
-  /**
-   * How to encode the source into the URL.
-   * - `plain` (default): readable `…/plain/<src>` — works great with relative
-   *   sources resolved by the edge's configured base URL.
-   * - `base64`: URL-safe base64 — robust for arbitrary absolute URLs with
-   *   query strings or special characters.
-   */
-  encode?: SourceEncoding
-  /**
-   * The signature path segment.
-   * - omit `key`/`salt` and leave this unset → `insecure` (requires the edge to
-   *   serve unsigned URLs, the usual setup behind /cdn/);
-   * - set to a custom string to hardcode it;
-   * - set to `false` to omit the segment entirely (when the edge injects it).
-   */
-  signature?: string | false
-  /**
-   * Hex-encoded signing key. When BOTH `key` and `salt` are set the URL is
-   * signed (HMAC-SHA256). ⚠️ In a Nuxt provider this runs in the browser too,
-   * exposing the key — prefer signing at the edge. Safe for server-only /
-   * programmatic use.
-   */
-  key?: string
-  /** Hex-encoded signing salt. See {@link key}. */
-  salt?: string
-  /** Truncate the signature to N bytes. */
-  signatureSize?: number
 }

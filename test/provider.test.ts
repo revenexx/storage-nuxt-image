@@ -7,22 +7,22 @@ describe('Nuxt Image provider', () => {
       modifiers: { width: 300, height: 200, format: 'webp' },
       baseURL: 'https://my-shop.com',
     })
-    expect(url).toBe('https://my-shop.com/cdn/insecure/w:300/h:200/plain/uploads/a.jpg@webp')
+    expect(url).toBe('https://my-shop.com/cdn/uploads/a.jpg?w=300&h=200&fm=webp')
   })
 
   it('works with no modifiers', () => {
-    expect(getImage('a.jpg').url).toBe('/cdn/insecure/plain/a.jpg')
+    expect(getImage('a.jpg').url).toBe('/cdn/a.jpg')
   })
 
   it('default export is a Nuxt-compatible provider factory exposing getImage', () => {
     const provider = providerFactory()
     expect(typeof provider.getImage).toBe('function')
     expect(provider.getImage('a.jpg', { modifiers: { width: 50 } }).url)
-      .toBe('/cdn/insecure/w:50/plain/a.jpg')
+      .toBe('/cdn/a.jpg?w=50')
   })
 
-  it('forwards encoding and signing options from the provider config', () => {
-    const { url } = getImage('a.jpg', { modifiers: { width: 10 }, encode: 'base64', signature: false })
-    expect(url).toMatch(/^\/cdn\/w:10\/[\w-]+$/)
+  it('forwards the cdnPath option from the provider config', () => {
+    const { url } = getImage('a.jpg', { modifiers: { width: 10, fit: 'cover' }, cdnPath: '/media/' })
+    expect(url).toBe('/media/a.jpg?w=10&fit=cover')
   })
 })
