@@ -62,12 +62,24 @@ export interface Adjust {
   saturation?: number
 }
 
+/**
+ * Watermark anchor position (imgproxy gravity codes): center, the four edges,
+ * the four corners, or `re` to replicate/tile across the image.
+ */
+export type WatermarkPosition
+  = | 'ce' | 'no' | 'so' | 'ea' | 'we'
+    | 'noea' | 'nowe' | 'soea' | 'sowe' | 're'
+
 export interface Watermark {
   /** Opacity 0..1. */
   opacity: number
-  position?: string
+  /** Where to place the watermark (default: the CDN's configured default). */
+  position?: WatermarkPosition
+  /** X offset from the position (px). */
   x?: number
+  /** Y offset from the position (px). */
   y?: number
+  /** Scale relative to the result (0..1). */
   scale?: number
 }
 
@@ -131,7 +143,12 @@ export interface TransformModifiers {
   monochrome?: boolean | number
 
   // --- Watermark -----------------------------------------------------------
-  watermark?: Watermark
+  /**
+   * Overlay the CDN's configured watermark. A number is shorthand for the
+   * opacity (`watermark: 0.5`); the object form adds position/offset/scale.
+   * Requires a watermark to be configured on the CDN to be visible.
+   */
+  watermark?: number | Watermark
 
   // --- Layout / metadata ---------------------------------------------------
   /** Apply a CSS-like style string. */

@@ -124,6 +124,70 @@ See **[docs/transformations.md](./docs/transformations.md)** for the complete re
 { rawOptions: ['gr:0.5:1:0'] } // → ?opts=gr:0.5:1:0
 ```
 
+## Presets
+
+Define reusable transform bundles once and reference them by name. Ship-ready
+presets are included — spread them into your config:
+
+```ts
+import { presets } from '@revenexx/storage-nuxt-image'
+
+export default defineNuxtConfig({
+  image: {
+    provider: 'storage',
+    presets, // thumbnail, avatar, card, hero, ogImage, placeholder
+  },
+})
+```
+
+```vue
+<NuxtImg preset="card" src="/uploads/photo.jpg" />
+<NuxtImg preset="avatar" src="/uploads/user.jpg" />
+```
+
+| Preset        | Output                         |
+| ------------- | ------------------------------ |
+| `thumbnail`   | 150×150, smart crop, webp      |
+| `avatar`      | 96×96, smart crop, webp        |
+| `card`        | 400×300, smart crop, webp      |
+| `hero`        | 1920×1080, smart crop, webp    |
+| `ogImage`     | 1200×630 social card, jpg      |
+| `placeholder` | 32px blurred LQIP, webp        |
+
+Add your own alongside them, or override:
+
+```ts
+image: {
+  presets: {
+    ...presets,
+    banner: { width: 1600, height: 400, fit: 'cover', format: 'webp', quality: 80 },
+  },
+}
+```
+
+> Presets expand to modifiers in Nuxt **before** the request, so they work on
+> any CDN tier. (A CDN-side `preset` modifier also exists for server-defined
+> presets — see the transformation reference.)
+
+## Watermarks
+
+Overlay the watermark configured on your CDN. The shorthand sets opacity; the
+object form adds position, offset and scale:
+
+```vue
+<NuxtImg src="/uploads/photo.jpg" :modifiers="{ watermark: 0.4 }" />
+
+<NuxtImg
+  src="/uploads/photo.jpg"
+  :modifiers="{ watermark: { opacity: 0.4, position: 'soea', x: 16, y: 16, scale: 0.15 } }"
+/>
+```
+
+`position` is one of `ce no so ea we noea nowe soea sowe re` (`re` tiles it).
+
+> The watermark image itself is configured on the CDN; this modifier controls
+> how it is applied.
+
 ## Programmatic / standalone usage
 
 No Nuxt needed — import the builder:

@@ -68,7 +68,14 @@ the CDN validates, clamps and signs the transform server-side.
 
 | Modifier    | Query param | Notes |
 | ----------- | ----------- | ----- |
-| `watermark` | `watermark` | `{ opacity, position, x, y, scale }` → `watermark=0.4:soea:16:16:0.15` |
+| `watermark` | `watermark` | `0.4` (opacity shorthand) or `{ opacity, position, x, y, scale }` → `watermark=0.4:soea:16:16:0.15` |
+
+`position` is one of `ce no so ea we noea nowe soea sowe re` (`re` tiles it).
+The watermark image is configured on the CDN; this modifier controls how it's
+applied.
+
+> See the README for ready-made **presets** (`thumbnail`, `avatar`, `card`,
+> `hero`, `ogImage`, `placeholder`) you can spread into `image.presets`.
 
 ## Layout, metadata & output
 

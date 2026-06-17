@@ -136,8 +136,8 @@ export function serializeModifiers(modifiers: TransformModifiers): string {
     }
     add('trim', t.join(':'))
   }
-  if (m.watermark) {
-    const w = m.watermark
+  if (m.watermark != null) {
+    const w = typeof m.watermark === 'number' ? { opacity: m.watermark } : m.watermark
     const t: (string | number)[] = [w.opacity]
     if (w.position != null || w.x != null || w.y != null || w.scale != null) {
       t.push(w.position ?? '', w.x ?? 0, w.y ?? 0, w.scale ?? 0)

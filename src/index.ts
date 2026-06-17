@@ -8,6 +8,8 @@
 export { default, getImage } from './provider'
 export type { ResolvedImage, StorageImageContext } from './define-provider'
 export { buildImageUrl, serializeModifiers } from './builder'
+export { presets } from './presets'
+export type { ImagePreset } from './presets'
 export type {
   Adjust,
   Color,
@@ -21,4 +23,5 @@ export type {
   TransformModifiers,
   Trim,
   Watermark,
+  WatermarkPosition,
 } from './types'
