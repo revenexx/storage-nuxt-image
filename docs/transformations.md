@@ -81,7 +81,7 @@ applied.
 
 | Modifier            | Query param         | Notes |
 | ------------------- | ------------------- | ----- |
-| `style`             | `style`             | CSS-like style string |
+| `style`             | `style`             | plain CSS string, e.g. `border-radius:10px` (the CDN encodes it) |
 | `stripMetadata`     | `stripMetadata`     | boolean |
 | `keepCopyright`     | `keepCopyright`     | boolean |
 | `stripColorProfile` | `stripColorProfile` | boolean |

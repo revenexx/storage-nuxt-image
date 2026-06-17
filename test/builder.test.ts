@@ -81,6 +81,13 @@ describe('serializeModifiers', () => {
     expect(serializeModifiers({ width: 10, rawOptions: ['gr:0.5:1:0', 'co:0.8'] })).toBe('w=10&opts=gr:0.5:1:0,co:0.8')
   })
 
+  it('passes a plain CSS style through (the CDN base64-encodes it)', () => {
+    expect(serializeModifiers({ style: 'border-radius:10px' })).toBe('style=border-radius:10px')
+    // semicolons/spaces/# are percent-encoded; the colon stays readable.
+    expect(serializeModifiers({ style: 'border-radius:10px;border:5px solid #f00' }))
+      .toBe('style=border-radius:10px%3Bborder:5px%20solid%20%23f00')
+  })
+
   it('returns an empty string with no modifiers', () => {
     expect(serializeModifiers({})).toBe('')
   })
