@@ -323,6 +323,18 @@ my-shop.com → revenexx edge → (signed, server-side) → optimized image (cac
 - Nuxt 3/4 with `@nuxt/image` v1 or v2 (peer; optional for standalone builder use).
 - Node ≥ 18.
 
+## Releasing
+
+Fully automated with [Changesets](https://github.com/changesets/changesets) +
+npm [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers) — **no
+tokens**. To ship a change:
+
+1. `pnpm changeset` — pick a bump (patch/minor/major) and describe it; commit the
+   generated file.
+2. On push to `main`, the **Release** workflow opens a "Version Packages" PR.
+3. Merge it → the workflow bumps the version, updates the changelog, and
+   publishes to npm with provenance.
+
 ## License
 
 [MIT](./LICENSE) © revenexx

@@ -1,17 +1,29 @@
 name: Release
 
-# Publishes to npm when a GitHub Release is published. Requires an NPM_TOKEN
-# secret with publish rights to the @revenexx scope. Uses npm provenance.
+# Versions + publishes @revenexx/storage-nuxt-image to npm via Changesets.
+# On a push to main with pending changesets, the action opens/updates a
+# "Version Packages" PR; once that PR is merged, it publishes.
+#
+# Publish auth is npm OIDC *trusted publishing* — NO stored token:
+#   - npmjs must have a trusted publisher configured for the package
+#     (repo: revenexx/storage-nuxt-image, workflow: release.yml).
+#     https://docs.npmjs.com/trusted-publishers
+#   - needs id-token: write + npm CLI >= 11.5.1 + Node >= 22.14.0.
+#   - the repo is public, so npm provenance is generated automatically.
+# GITHUB_TOKEN is only used by the action to open/update the Version PR.
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
 
 permissions:
-  contents: read
-  id-token: write # npm provenance
+  contents: write
+  pull-requests: write
+  id-token: write
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +32,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
+      # OIDC trusted publishing requires npm CLI >= 11.5.1 (newer than the one
+      # bundled with Node 22). pnpm publish shells out to this npm for auth.
+      - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
-      - run: pnpm test
-      - run: pnpm build
-      - run: npm publish --provenance --access public
+      - uses: changesets/action@v1
+        with:
+          # `pnpm run version` (changeset version) — not pnpm's built-in version.
+          version: pnpm run version
+          publish: pnpm run release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
