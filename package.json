@@ -1,0 +1,84 @@
+{
+  "name": "@revenexx/storage-nuxt-image",
+  "version": "0.1.0",
+  "description": "Nuxt Image provider for the Revenexx Storage CDN (imgproxy). Build optimized, on-the-fly image URLs against your own domain's /cdn/ endpoint with full imgproxy Pro support.",
+  "keywords": [
+    "nuxt",
+    "nuxt-image",
+    "nuxt-image-provider",
+    "imgproxy",
+    "image",
+    "cdn",
+    "revenexx",
+    "storage",
+    "image-optimization",
+    "responsive-images"
+  ],
+  "homepage": "https://github.com/revenexx/storage-nuxt-image#readme",
+  "bugs": {
+    "url": "https://github.com/revenexx/storage-nuxt-image/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/revenexx/storage-nuxt-image.git"
+  },
+  "license": "MIT",
+  "author": "Revenexx",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    },
+    "./builder": {
+      "types": "./dist/builder.d.mts",
+      "import": "./dist/builder.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "test:types": "tsc --noEmit",
+    "prepack": "unbuild",
+    "release": "pnpm test && pnpm build && changelogen --release --push && npm publish --access public"
+  },
+  "dependencies": {
+    "@noble/hashes": "^1.6.1",
+    "ufo": "^1.5.4"
+  },
+  "peerDependencies": {
+    "@nuxt/image": "^1.0.0 || ^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nuxt/image": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nuxt/eslint-config": "^1.0.0",
+    "@types/node": "^22.19.21",
+    "changelogen": "^0.5.7",
+    "eslint": "^9.0.0",
+    "typescript": "^5.6.0",
+    "unbuild": "^3.0.0",
+    "vitest": "^2.0.0"
+  },
+  "packageManager": "pnpm@10.23.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
