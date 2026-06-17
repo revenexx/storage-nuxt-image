@@ -4,7 +4,7 @@
  * types). The Nuxt Image module imports a provider module's default export as a
  * factory and reads `.getImage` off the returned object.
  */
-import type { ImgproxyModifiers, ProviderOptions } from './types'
+import type { TransformModifiers, ProviderOptions } from './types'
 
 /** Result the Nuxt Image runtime expects from a provider. */
 export interface ResolvedImage {
@@ -17,7 +17,7 @@ export interface ResolvedImage {
  * this provider are {@link ProviderOptions}.
  */
 export interface StorageImageContext extends ProviderOptions {
-  modifiers?: ImgproxyModifiers
+  modifiers?: TransformModifiers
 }
 
 export type ProviderGetImage = (src: string, context?: StorageImageContext) => ResolvedImage

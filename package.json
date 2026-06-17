@@ -1,12 +1,11 @@
 {
   "name": "@revenexx/storage-nuxt-image",
   "version": "0.1.0",
-  "description": "Nuxt Image provider for the Revenexx Storage CDN (imgproxy). Build optimized, on-the-fly image URLs against your own domain's /cdn/ endpoint with full imgproxy Pro support.",
+  "description": "Nuxt Image provider for the revenexx Storage CDN. Build optimized, on-the-fly image URLs against your own domain's /cdn/ endpoint.",
   "keywords": [
     "nuxt",
     "nuxt-image",
     "nuxt-image-provider",
-    "imgproxy",
     "image",
     "cdn",
     "revenexx",
@@ -23,7 +22,7 @@
     "url": "git+https://github.com/revenexx/storage-nuxt-image.git"
   },
   "license": "MIT",
-  "author": "Revenexx",
+  "author": "revenexx",
   "type": "module",
   "sideEffects": false,
   "exports": {

@@ -1,14 +1,14 @@
 # @revenexx/storage-nuxt-image
 
-> Nuxt Image provider for the **Revenexx Storage CDN** — build optimized, on-the-fly images straight from your own domain's `/cdn/` endpoint, powered by [imgproxy](https://imgproxy.net) (full **Pro** option set supported).
+> Nuxt Image provider for the **revenexx Storage CDN** — build optimized, on-the-fly images straight from your own domain's `/cdn/` endpoint.
 
 [![npm version](https://img.shields.io/npm/v/@revenexx/storage-nuxt-image?color=2B90B6)](https://www.npmjs.com/package/@revenexx/storage-nuxt-image)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 - 🌐 **Bring your own domain.** Images are served from *your* site (`https://my-shop.com/cdn/…`), not a third-party host. Leave the base URL empty and URLs stay relative, so the same build works on every customer domain automatically.
 - 🪄 **`/cdn/` is appended for you.** Point your images at a path or URL; the provider routes them through the edge.
-- 🧰 **Full imgproxy Pro API.** Resize, crop, smart/focus-point gravity, watermarks, adjustments, trimming, format/quality, presets, signing — plus a raw escape hatch for anything else.
-- 📐 **Native Nuxt modifiers.** `width`, `height`, `fit`, `format`, `quality`, `background` are mapped to imgproxy automatically — drop it into `<NuxtImg>` / `<NuxtPicture>` and go.
+- 🧰 **Rich transformations.** Resize, crop, smart/focus-point gravity, watermarks, adjustments, trimming, format/quality, presets, signing — plus a raw escape hatch for anything else.
+- 📐 **Native Nuxt modifiers.** `width`, `height`, `fit`, `format`, `quality`, `background` are mapped automatically — drop it into `<NuxtImg>` / `<NuxtPicture>` and go.
 - 🪶 **Tiny & isomorphic.** Works on server and client. Ships ESM + types. Also usable standalone (no Nuxt required) via the URL builder.
 
 ---
@@ -65,11 +65,11 @@ Rendered URL:
 /cdn/insecure/w:800/h:450/rt:fill/plain/uploads/hero.jpg@webp
 ```
 
-The browser resolves that relative URL against the current site, so on `my-shop.com` it becomes `https://my-shop.com/cdn/…`, where the Revenexx edge serves the optimized image.
+The browser resolves that relative URL against the current site, so on `my-shop.com` it becomes `https://my-shop.com/cdn/…`, where the revenexx edge serves the optimized image.
 
 ## Bring your own domain
 
-Many sites run on their own domain (`my-shop.com`) that points at the Revenexx edge, which exposes image processing under `/cdn/`. You have two ways to target it:
+Many sites run on their own domain (`my-shop.com`) that points at the revenexx edge, which exposes image processing under `/cdn/`. You have two ways to target it:
 
 **1. Relative URLs (recommended for multi-domain / white-label).** Leave `baseURL` empty. The provider emits `/cdn/…`, which the browser resolves against whatever origin serves the page. One build, every domain — no per-tenant configuration.
 
@@ -99,9 +99,9 @@ The `/cdn/` segment is always appended automatically. Change it with `cdnPath` (
 
 ## Modifiers
 
-Standard Nuxt Image modifiers work out of the box and are translated to imgproxy:
+Standard Nuxt Image modifiers work out of the box and are translated for the CDN:
 
-| Nuxt modifier | imgproxy        | Notes                                                        |
+| Nuxt modifier | CDN option      | Notes                                                        |
 | ------------- | --------------- | ------------------------------------------------------------ |
 | `width`       | `w`             |                                                              |
 | `height`      | `h`             |                                                              |
@@ -114,9 +114,9 @@ Standard Nuxt Image modifiers work out of the box and are translated to imgproxy
 <NuxtImg src="/uploads/p.jpg" :width="600" :modifiers="{ gravity: 'sm', quality: 82, blur: 3 }" />
 ```
 
-### Full imgproxy (incl. Pro) options
+### Advanced transformations
 
-Every imgproxy processing option is available through `:modifiers`. Structured options accept ergonomic objects:
+The full transformation surface is available through `:modifiers`. Structured options accept ergonomic objects:
 
 ```vue
 <NuxtImg
@@ -125,9 +125,9 @@ Every imgproxy processing option is available through `:modifiers`. Structured o
     resize: { type: 'fill', width: 1200, height: 630, enlarge: true },
     gravity: { type: 'fp', x: 0.5, y: 0.35 },   // focus point
     crop: { width: 1000, height: 1000, gravity: 'sm' },
-    adjust: { brightness: 10, contrast: 0.9, saturation: 1.1 }, // Pro
+    adjust: { brightness: 10, contrast: 0.9, saturation: 1.1 },
     watermark: { opacity: 0.4, position: 'soea', x: 16, y: 16, scale: 0.15 },
-    trim: { threshold: 10, color: 'ffffff' },     // Pro
+    trim: { threshold: 10, color: 'ffffff' },
     padding: { top: 20, bottom: 20 },
     quality: 80,
     stripMetadata: true,
@@ -136,7 +136,7 @@ Every imgproxy processing option is available through `:modifiers`. Structured o
 />
 ```
 
-See **[docs/imgproxy-options.md](./docs/imgproxy-options.md)** for the complete option reference (every camelCase key, its imgproxy short name, and which are Pro). Anything not modelled can be passed verbatim:
+See **[docs/transformations.md](./docs/transformations.md)** for the complete option reference. Anything not modelled can be passed verbatim:
 
 ```ts
 { rawOptions: ['gradient:0.5:1:0', 'some-future-option:value'] }
@@ -147,9 +147,9 @@ See **[docs/imgproxy-options.md](./docs/imgproxy-options.md)** for the complete 
 You don't need Nuxt to build URLs — import the framework-agnostic builder:
 
 ```ts
-import { buildImgproxyUrl } from '@revenexx/storage-nuxt-image/builder'
+import { buildImageUrl } from '@revenexx/storage-nuxt-image/builder'
 
-buildImgproxyUrl('/uploads/a.jpg', { width: 400, format: 'webp' }, { baseURL: 'https://my-shop.com' })
+buildImageUrl('/uploads/a.jpg', { width: 400, format: 'webp' }, { baseURL: 'https://my-shop.com' })
 // → 'https://my-shop.com/cdn/insecure/w:400/plain/uploads/a.jpg@webp'
 ```
 
@@ -168,14 +168,14 @@ options: { encode: 'base64' }
 
 ## Signing
 
-Behind the Revenexx edge, image URLs are typically **unsigned at the app layer** — the edge runs imgproxy in unsafe mode (so the provider emits the `insecure` segment) and/or signs requests itself. That's the default, and nothing is required from you.
+Behind the revenexx edge, image URLs are typically **unsigned at the app layer** — the edge handles request security and signing itself, and the provider emits an `insecure` marker segment. That's the default, and nothing is required from you.
 
-If you operate your own imgproxy and want signed URLs:
+If you operate your own image backend and want signed URLs:
 
 ```ts
 options: {
-  key: process.env.IMGPROXY_KEY!,   // hex
-  salt: process.env.IMGPROXY_SALT!, // hex
+  key: process.env.CDN_SIGN_KEY!,   // hex
+  salt: process.env.CDN_SIGN_SALT!, // hex
   // signatureSize: 32,             // optional truncation
 }
 ```
@@ -187,10 +187,10 @@ options: {
 | Option          | Type                                  | Default       | Description                                                      |
 | --------------- | ------------------------------------- | ------------- | ---------------------------------------------------------------- |
 | `baseURL`       | `string`                              | `''`          | Origin to prefix. Empty → relative URLs (bring your own domain). |
-| `cdnPath`       | `string`                              | `'/cdn/'`     | Path that routes to the edge/imgproxy. `''` disables it.         |
+| `cdnPath`       | `string`                              | `'/cdn/'`     | Path that routes to the edge. `''` disables it.                  |
 | `encode`        | `'plain' \| 'base64'`                 | `'plain'`     | How the source is encoded into the URL.                          |
 | `signature`     | `string \| false`                     | `'insecure'`  | Signature segment; `false` omits it.                             |
-| `key` / `salt`  | `string` (hex)                        | —             | Enable HMAC signing (see caveat above).                          |
+| `key` / `salt`  | `string` (hex)                        | —             | Enable HMAC-SHA256 signing (see caveat above).                   |
 | `signatureSize` | `number`                              | full          | Truncate the signature to N bytes.                               |
 
 ## TypeScript
@@ -198,7 +198,7 @@ options: {
 Fully typed. Import the public types when you need them:
 
 ```ts
-import type { ImgproxyModifiers, ProviderOptions } from '@revenexx/storage-nuxt-image'
+import type { TransformModifiers, ProviderOptions } from '@revenexx/storage-nuxt-image'
 ```
 
 ## How it works
@@ -208,14 +208,14 @@ import type { ImgproxyModifiers, ProviderOptions } from '@revenexx/storage-nuxt-
         │
         ▼  getImage(src, { modifiers, ...options })
 @revenexx/storage-nuxt-image
-        │  builds an imgproxy URL
+        │  builds a transformation URL
         ▼
 /cdn/insecure/w:800/rt:fill/plain/uploads/a.jpg@webp
         │  browser requests it from your domain
         ▼
-my-shop.com  ──►  Revenexx edge  ──►  imgproxy  ──►  optimized image (cached)
+my-shop.com  ──►  revenexx edge  ──►  optimized image (cached)
 ```
 
 ## License
 
-[MIT](./LICENSE) © Revenexx
+[MIT](./LICENSE) © revenexx

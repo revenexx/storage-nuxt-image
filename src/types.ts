@@ -1,22 +1,23 @@
 /**
  * Public types for `@revenexx/storage-nuxt-image`.
  *
- * The package builds imgproxy URLs for the Revenexx Storage CDN. Two surfaces
- * share these types: the pure URL {@link buildImgproxyUrl} builder and the Nuxt
- * Image provider.
+ * The package builds image-transformation URLs for the revenexx Storage CDN.
+ * Two surfaces share these types: the pure URL {@link buildImageUrl} builder
+ * and the Nuxt Image provider.
  */
 
 /** A `R:G:B` triplet (0-255) or a hex string (`fff`, `ffffff`). */
 export type Color = string | [number, number, number]
 
 /**
- * imgproxy gravity. A simple type (`ce`, `sm`, …) or an object with offsets.
+ * Gravity — the anchor used when cropping/placing. A simple type (`ce`, `sm`,
+ * …) or an object with offsets.
  *
  * - `no` north, `so` south, `ea` east, `we` west, `noea`, `nowe`, `soea`,
  *   `sowe`, `ce` center
  * - `sm` smart gravity (detects the most interesting part)
  * - `fp` focus point — provide `x`/`y` as 0..1 fractions
- * - `obj`/`objw` object/weighted-object gravity (Pro)
+ * - `obj`/`objw` object / weighted-object gravity
  */
 export type GravityType
   = | 'no' | 'so' | 'ea' | 'we'
@@ -31,7 +32,7 @@ export interface Gravity {
   y?: number
 }
 
-/** imgproxy resizing type. */
+/** Resizing type. */
 export type ResizingType = 'fit' | 'fill' | 'fill-down' | 'force' | 'auto'
 
 export interface Resize {
@@ -74,32 +75,33 @@ export interface Watermark {
 export type Padding = number | { top?: number, right?: number, bottom?: number, left?: number }
 
 /**
- * The full imgproxy processing-option surface (OSS + Pro), plus the standard
- * Nuxt Image modifiers (`width`, `height`, `fit`, `format`, `quality`,
- * `background`). Anything not listed can still be passed through {@link raw}.
+ * The full transformation surface, plus the standard Nuxt Image modifiers
+ * (`width`, `height`, `fit`, `format`, `quality`, `background`). Anything not
+ * listed can still be passed through {@link TransformModifiers.rawOptions}.
  *
- * Camel-case keys map to imgproxy options; structured options accept ergonomic
- * objects (e.g. `resize`, `crop`, `gravity`, `adjust`, `watermark`).
+ * Camel-case keys map to the CDN's short option names; structured options
+ * accept ergonomic objects (e.g. `resize`, `crop`, `gravity`, `adjust`,
+ * `watermark`).
  */
-export interface ImgproxyModifiers {
+export interface TransformModifiers {
   // --- Nuxt Image standard modifiers ---------------------------------------
-  /** Target width (px). Maps to imgproxy `w`. */
+  /** Target width (px). */
   width?: number | string
-  /** Target height (px). Maps to imgproxy `h`. */
+  /** Target height (px). */
   height?: number | string
-  /** How the image fits the box. Maps to imgproxy resizing type. */
+  /** How the image fits the box. */
   fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside' | ResizingType
   /** Output format (`webp`, `avif`, `jpg`, `png`, …). Sets the URL extension. */
   format?: string
-  /** Quality 0..100. Maps to imgproxy `q`. */
+  /** Quality 0..100. */
   quality?: number | string
-  /** Background color for transparent areas. Maps to imgproxy `bg`. */
+  /** Background color for transparent areas. */
   background?: Color
 
   // --- Resize --------------------------------------------------------------
   resize?: Resize
   resizingType?: ResizingType
-  /** Pro: resizing algorithm (`nearest`, `linear`, `cubic`, `lanczos2`, `lanczos3`). */
+  /** Resizing algorithm (`nearest`, `linear`, `cubic`, `lanczos2`, `lanczos3`). */
   resizingAlgorithm?: string
   size?: { width?: number, height?: number, enlarge?: boolean, extend?: boolean }
   minWidth?: number
@@ -113,7 +115,7 @@ export interface ImgproxyModifiers {
   // --- Geometry ------------------------------------------------------------
   gravity?: GravityType | Gravity
   crop?: Crop
-  /** Pro: trim borders. */
+  /** Trim borders. */
   trim?: Trim
   padding?: Padding
   autoRotate?: boolean
@@ -127,16 +129,13 @@ export interface ImgproxyModifiers {
   saturation?: number
   blur?: number
   sharpen?: number
-  /** Pro */
   pixelate?: number
-  /** Pro: `mode:weight:divider`. */
+  /** `mode:weight:divider`. */
   unsharpening?: [string, number, number] | string
-  /** Pro */
   monochrome?: boolean | number
-  /** Pro */
   duotone?: boolean | number
 
-  // --- Watermark (Pro for url/text) ----------------------------------------
+  // --- Watermark -----------------------------------------------------------
   watermark?: Watermark
   watermarkUrl?: string
   watermarkText?: string
@@ -145,57 +144,48 @@ export interface ImgproxyModifiers {
   watermarkShadow?: number
 
   // --- Layout / metadata ---------------------------------------------------
-  /** Pro: apply a CSS-like style string. */
+  /** Apply a CSS-like style string. */
   style?: string
   stripMetadata?: boolean
   keepCopyright?: boolean
   stripColorProfile?: boolean
-  /** Pro */
   enforceThumbnail?: boolean
-  /** Pro */
   dpi?: number
 
   // --- Output --------------------------------------------------------------
-  /** Pro: per-format quality, e.g. `{ webp: 80, avif: 60 }`. */
+  /** Per-format quality, e.g. `{ webp: 80, avif: 60 }`. */
   formatQuality?: Record<string, number> | string
-  /** Pro: automatic quality, `method:target:min:max`. */
+  /** Automatic quality, `method:target:min:max`. */
   autoquality?: string | (string | number)[]
-  /** Pro: cap the output size in bytes. */
+  /** Cap the output size in bytes. */
   maxBytes?: number
-  /** Pro */
   jpegOptions?: (string | number | boolean)[] | string
-  /** Pro */
   pngOptions?: (string | number | boolean)[] | string
-  /** Pro */
   gifOptions?: (string | number | boolean)[] | string
-  /** Pro: select a page of a multi-page document. */
+  /** Select a page of a multi-page document. */
   page?: number
-  /** Pro */
   pages?: number
-  /** Pro */
   disableAnimation?: boolean
-  /** Pro */
   videoThumbnailSecond?: number
-  /** Pro */
   fallbackImageUrl?: string
 
   // --- Flow / serving ------------------------------------------------------
   skipProcessing?: string[] | string
-  /** Pro: treat the source as raw bytes (no processing). */
+  /** Treat the source as raw bytes (no processing). */
   raw?: string[] | string | boolean
   cachebuster?: string
   /** Unix timestamp after which the URL is rejected. */
   expires?: number
   filename?: string
   returnAttachment?: boolean
-  /** Apply a named imgproxy preset (or several). */
+  /** Apply a named preset (or several). */
   preset?: string | string[]
   maxSrcResolution?: number
   maxSrcFileSize?: number
   maxAnimationFrames?: number
 
   /**
-   * Escape hatch: literal processing-option segments appended verbatim, e.g.
+   * Escape hatch: literal option segments appended verbatim, e.g.
    * `['rs:fill:300:400', 'g:sm']`. Use for any option not modelled above.
    */
   rawOptions?: string[]
@@ -204,10 +194,10 @@ export interface ImgproxyModifiers {
   [key: string]: unknown
 }
 
-/** How the source image is encoded into the imgproxy URL. */
+/** How the source image is encoded into the URL. */
 export type SourceEncoding = 'plain' | 'base64'
 
-/** Options for {@link buildImgproxyUrl} and the Nuxt provider. */
+/** Options for {@link buildImageUrl} and the Nuxt provider. */
 export interface ProviderOptions {
   /**
    * Base URL the CDN is served from — typically the customer's own domain,
@@ -216,8 +206,8 @@ export interface ProviderOptions {
    */
   baseURL?: string
   /**
-   * Path segment appended after {@link baseURL} that routes to the Revenexx
-   * edge / imgproxy. Defaults to `/cdn/`. Set to `''` to disable.
+   * Path segment appended after {@link baseURL} that routes to the revenexx
+   * edge. Defaults to `/cdn/`. Set to `''` to disable.
    */
   cdnPath?: string
   /**
@@ -231,20 +221,20 @@ export interface ProviderOptions {
   /**
    * The signature path segment.
    * - omit `key`/`salt` and leave this unset → `insecure` (requires the edge to
-   *   run imgproxy with unsafe URLs enabled, the usual setup behind /cdn/);
+   *   serve unsigned URLs, the usual setup behind /cdn/);
    * - set to a custom string to hardcode it;
    * - set to `false` to omit the segment entirely (when the edge injects it).
    */
   signature?: string | false
   /**
-   * Hex-encoded imgproxy signing key. When BOTH `key` and `salt` are set the
-   * URL is signed (HMAC-SHA256). ⚠️ In a Nuxt provider this runs in the browser
-   * too, exposing the key — prefer signing at the edge. Safe for server-only /
+   * Hex-encoded signing key. When BOTH `key` and `salt` are set the URL is
+   * signed (HMAC-SHA256). ⚠️ In a Nuxt provider this runs in the browser too,
+   * exposing the key — prefer signing at the edge. Safe for server-only /
    * programmatic use.
    */
   key?: string
-  /** Hex-encoded imgproxy signing salt. See {@link key}. */
+  /** Hex-encoded signing salt. See {@link key}. */
   salt?: string
-  /** Truncate the signature to N bytes (imgproxy `IMGPROXY_SIGNATURE_SIZE`). */
+  /** Truncate the signature to N bytes. */
   signatureSize?: number
 }

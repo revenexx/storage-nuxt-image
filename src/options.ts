@@ -1,11 +1,11 @@
 /**
- * Serialization of {@link ImgproxyModifiers} into imgproxy processing-option
+ * Serialization of {@link TransformModifiers} into the CDN's processing-option
  * segments (e.g. `rs:fill:300:400`, `g:sm`, `q:80`).
  *
- * The full imgproxy OSS + Pro option surface is supported: well-known options
+ * The full option surface is supported: well-known options
  * map camel-case → short name via {@link KEY_MAP}; structured options
  * (`resize`, `crop`, `gravity`, …) have dedicated normalizers; everything else
- * falls through a generic serializer or {@link ImgproxyModifiers.rawOptions}.
+ * falls through a generic serializer or {@link TransformModifiers.rawOptions}.
  */
 import type {
   Adjust,
@@ -13,7 +13,7 @@ import type {
   Crop,
   Gravity,
   GravityType,
-  ImgproxyModifiers,
+  TransformModifiers,
   Padding,
   Resize,
   Trim,
@@ -29,10 +29,8 @@ const STANDARD_KEYS = new Set([
 ])
 
 /**
- * camelCase modifier → imgproxy short option name. Covers the documented
- * imgproxy processing options (Pro options included).
- *
- * @see https://docs.imgproxy.net/usage/processing
+ * camelCase modifier → the CDN's short option name. Covers the documented
+ * processing options.
  */
 export const KEY_MAP: Record<string, string> = {
   // resize
@@ -203,7 +201,7 @@ function zoomOpt(z: number | [number, number]): string {
 }
 
 /**
- * Map the standard Nuxt `fit` modifier onto an imgproxy resizing type.
+ * Map the standard Nuxt `fit` modifier onto a resizing type.
  */
 const FIT_MAP: Record<string, string> = {
   cover: 'fill',
@@ -211,25 +209,25 @@ const FIT_MAP: Record<string, string> = {
   fill: 'force',
   inside: 'fit',
   outside: 'fill',
-  // pass-through native imgproxy values
+  // pass-through native values
   force: 'force',
   auto: 'auto',
   'fill-down': 'fill-down',
 }
 
 /**
- * Build the ordered list of imgproxy processing-option segments from the given
+ * Build the ordered list of processing-option segments from the given
  * modifiers. The output preserves a sensible, deterministic order.
  *
  * Returns `{ segments, format }` — `format` (the resolved output extension) is
  * returned separately because it is encoded as the URL extension, not as a
  * processing option.
  */
-export function serializeModifiers(modifiers: ImgproxyModifiers): { segments: string[], format?: string } {
+export function serializeModifiers(modifiers: TransformModifiers): { segments: string[], format?: string } {
   const segments: string[] = []
   const m = modifiers
 
-  // presets first (imgproxy applies them in order, before other options)
+  // presets first (they are applied in order, before other options)
   if (m.preset != null) {
     const presets = Array.isArray(m.preset) ? m.preset : [m.preset]
     if (presets.length) {
@@ -289,7 +287,7 @@ export function serializeModifiers(modifiers: ImgproxyModifiers): { segments: st
     segments.push(watermarkOpt(m.watermark))
   }
 
-  // --- generic key-mapped options (the long tail, incl. Pro) ---------------
+  // --- generic key-mapped options (the long tail) ---------------
   const handled = STANDARD_KEYS
   for (const key of Object.keys(m)) {
     if (handled.has(key) || key === 'baseURL') {

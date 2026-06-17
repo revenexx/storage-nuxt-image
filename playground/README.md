@@ -12,7 +12,7 @@ npm run dev   # or: npx nuxi dev
 ```
 
 Then open the app and inspect the generated `<img src>` values in devtools to
-see the imgproxy URLs the provider produces.
+see the transformation URLs the provider produces.
 
 > While developing the package locally, link it instead of installing from npm:
 > from the repo root run `npm pack` and `npm install ../<tarball>.tgz` here, or

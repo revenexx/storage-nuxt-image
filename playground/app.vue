@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // A few examples of the provider in action. Inspect the generated <img src>
-// in your browser devtools to see the imgproxy URLs.
+// in your browser devtools to see the generated CDN URLs.
 </script>
 
 <template>
@@ -10,13 +10,13 @@
     <h2>Basic resize + format</h2>
     <NuxtImg src="/uploads/hero.jpg" width="800" height="450" fit="cover" format="webp" />
 
-    <h2>Smart gravity crop (imgproxy)</h2>
+    <h2>Smart gravity crop</h2>
     <NuxtImg
       src="/uploads/portrait.jpg"
       :modifiers="{ crop: { width: 400, height: 400, gravity: 'sm' }, quality: 82 }"
     />
 
-    <h2>Pro: adjust + watermark + focus point</h2>
+    <h2>Advanced: adjust + watermark + focus point</h2>
     <NuxtImg
       src="/uploads/product.jpg"
       :width="1200"
