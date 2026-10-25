@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: "storage-nuxt-image"
+  description: "Nuxt Image provider for the revenexx Storage CDN: optimized, on-the-fly images from your own domain's /cdn/ endpoint."
+  annotations:
+    github.com/project-slug: revenexx/storage-nuxt-image
+spec:
+  type: library
+  owner: group:default/frontend-engineering
+  system: revenue-cloud
+  lifecycle: experimental
